@@ -9,26 +9,28 @@ userData = dict()
 userCountryCode = dict()
 userContinentCode = dict()
 
-#USE THIS WITH ANY TASKS TO READ THE JSON FILE AND POPULATE userData dictionary
+
+# USE THIS WITH ANY TASKS TO READ THE JSON FILE AND POPULATE userData dictionary
 def readJSON(fileLocation):
     print('Reading JSON data from file', fileLocation)
 
     with open(fileLocation) as inputFile:
         jsonData = inputFile.read()
-        #EACH ENTRY IS EVERYTHING BETWEEN { }
-        inputArray = (input.group() for input in re.finditer(r'{.*}', jsonData))
+        # EACH ENTRY IS EVERYTHING BETWEEN { }
+        inputArray = (inputElement.group() for inputElement in re.finditer(r'{.*}', jsonData))
 
-        #initialize counter for the amount of users to index the users
+        # initialize counter for the amount of users to index the users
         i = 0
-        #Split the JSON data into a dictionary of each user
-        for input in inputArray:
-            currUser = json.loads(input)
+        # Split the JSON data into a dictionary of each user
+        for inputElement in inputArray:
+            currUser = json.loads(inputElement)
             userData[i] = currUser
             i += 1
 
     print("The user dictionary has been successfully populated")
 
-#TASK2A START
+
+# TASK2A START
 def countryCount(documentID):
     for country in range(0, len(userData)):
         if 'visitor_country' in userData[country] and 'env_doc_id' in userData[country]:
@@ -46,53 +48,60 @@ def countryPrint():
     plt.xticks(countries, countries)
     plt.show()
 
-#TASK2A END
 
-#TASK2B START
+# TASK2A END
+
+# TASK2B START
 def continentCount(documentID):
     continents = {
-    'NA': 'North America',
-    'SA': 'South America', 
-    'AS': 'Asia',
-    'OC': 'Australia',
-    'AF': 'Africa',
-    'EU': 'Europe'
-}
+        'NA': 'North America',
+        'SA': 'South America',
+        'AS': 'Asia',
+        'OC': 'Australia',
+        'AF': 'Africa',
+        'EU': 'Europe'
+    }
     for country in range(0, len(userData)):
-            continent = continents[country_alpha2_to_continent_code(userData[country]['visitor_country'])]
-            if userData[country]['env_doc_id'] == documentID:
-                dictKey = continent
-                if dictKey in userContinentCode:
-                    userContinentCode[dictKey] += 1
-                else:
-                    userContinentCode[dictKey] = 1
-        
+        continent = continents[country_alpha2_to_continent_code(userData[country]['visitor_country'])]
+        if userData[country]['env_doc_id'] == documentID:
+            dictKey = continent
+            if dictKey in userContinentCode:
+                userContinentCode[dictKey] += 1
+            else:
+                userContinentCode[dictKey] = 1
+
+
 def continentPrint():
     continents = list(userContinentCode.keys())
     plt.bar(continents, height=list(userContinentCode.values()))
     plt.xticks(continents, continents)
     plt.show()
-#TASK2B END
+
+
+# TASK2B END
 
 def task2A():
     documentID = "131203154832-9b8594b7ec211f7e1a0782fd9883a42c"
-    #documentID = input("Enter the document ID: ") ------- UNCOMMENT ONCE FINISHED TESTING
+    # documentID = input("Enter the document ID: ") ------- UNCOMMENT ONCE FINISHED TESTING
     countryCount(documentID)
     countryPrint()
+
 
 def task2B():
     documentID = "131203154832-9b8594b7ec211f7e1a0782fd9883a42c"
     continentCount(documentID)
     continentPrint()
 
+
 def main():
-    #Do this for all tasks
-    fileLocation = input("Enter JSON datset file location: ")
+    # Do this for all tasks
+    fileLocation = input("Enter JSON dataset file location: ")
     readJSON(fileLocation)
 
-    #task2A()
+    task2A()
 
     task2B()
+
 
 # CHECK IF THIS IS MAIN FILE
 if __name__ == "__main__":
