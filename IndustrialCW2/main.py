@@ -10,6 +10,9 @@ userData = dict()
 userCountryCode = dict()
 userContinentCode = dict()
 browserCountDict = dict()
+documentReaderDict = dict()
+userReadDict = dict()
+
 
 #USE THIS WITH ANY TASKS TO READ THE JSON FILE AND POPULATE userData dictionary
 def readJSON(fileLocation):
@@ -29,6 +32,39 @@ def readJSON(fileLocation):
             i += 1
 
     print("The user dictionary has been successfully populated")
+
+def getReaders(documentID):
+    #userData -> json
+    readers = list()
+    for i in range(0, len(userData)):
+        if 'env_doc_id' in userData[i] and 'visitor_uuid' in userData[i]:
+            if userData[i]['env_doc_id'] == documentID:
+                if not userData[i]['visitor_uuid'] in readers:
+                    readers.append(userData[i]['visitor_uuid'])
+    documentReaderDict[documentID] = readers
+    return readers
+
+
+def ReadDocuments(visitorID):
+    documents = list()
+    for i in  range(0, len(userData)):
+        if 'env_doc_id' in userData[i] and 'visitor_uuid' in userData[i]:
+            if userData[i]['visitor_uuid'] == visitorID:
+                if not userData[i]['env_doc_id'] in documents:
+                    documents.append(userData[i]['env_doc_id'])
+    userReadDict[visitorID] = documents
+    return documents
+
+def alsoLikes(documentID):
+    tempUsers = list()
+    tempUsers = getReaders(documentID)
+    tempDocs = list()
+    for i in range(0, len(tempUsers)):
+        tempDocs += ReadDocuments(tempUsers[i])
+    return tempDocs
+
+
+
 
     # Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36 ---> CHROME
     # Mozilla/5.0 (Macintosh; Intel Mac OS X x.y; rv:42.0) Gecko/20100101 Firefox/42.0 ---> Firefox
@@ -128,12 +164,16 @@ def task3():
 
 def main():
     #Do this for all tasks
-    fileLocation = input("Enter JSON datset file location: ")
+    #fileLocation = input("Enter JSON datset file location: ")
+    fileLocation = "datasets/issuu_final.json"
     readJSON(fileLocation)
 
     #task2A()
     #task2B()
-    task3()
+    #task3()
+    print(getReaders("131224090853-45a33eba6ddf71f348aef7557a86ca5f"))
+    print(ReadDocuments("f2e00a44114b4b0d"))
+    print(alsoLikes("131224090853-45a33eba6ddf71f348aef7557a86ca5f"))
 
 # CHECK IF THIS IS MAIN FILE
 if __name__ == "__main__":
