@@ -43,7 +43,7 @@ def browserCount(documentID):
             if userData[i]['env_doc_id'] == documentID:
                 if "Firefox" in userData[i]['visitor_useragent']:
                     browser = "Firefox"
-                if "MSIE" in userData[i]['visitor_useragent']:
+                if "MSIE" in userData[i]['visitor_useragent'] or "Trident" in userData[i]['visitor_useragent']:
                     browser = "Internet Explorer"
                 if "Safari" in userData[i]['visitor_useragent']:
                     browser = "Safari"
