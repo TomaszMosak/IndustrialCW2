@@ -3,6 +3,9 @@ import json
 import sys
 import re
 import pycountry
+import numpy as np
+import tkinter as tkr
+from tkinter import * #IMPORTS ALL GUI COMPONENTS
 from pycountry_convert import country_alpha2_to_continent_code, country_name_to_country_alpha2
 
 # Suggestion: Move this data into a 'User' class in order to use more advanced lang. features - Cory
@@ -123,21 +126,29 @@ def countryPrint():
 def continentCount(documentID):
     continents = {
     'NA': 'North America',
-    'SA': 'South America', 
+    'SA': 'South America',
     'AS': 'Asia',
     'OC': 'Australia',
     'AF': 'Africa',
     'EU': 'Europe'
 }
     for country in range(0, len(userData)):
+        if userData[country]['visitor_country'] == 'ZZ':
+            continent = 'UNKNOWN'
+        elif userData[country]['visitor_country'] == 'AP': #Asia/Pacific Region
+            continent = 'Asia'
+        elif userData[country]['visitor_country'] in continents.keys():
+            continent = userData[country]['visitor_country']
+        else:
             continent = continents[country_alpha2_to_continent_code(userData[country]['visitor_country'])]
-            if userData[country]['env_doc_id'] == documentID:
-                dictKey = continent
-                if dictKey in userContinentCode:
-                    userContinentCode[dictKey] += 1
-                else:
-                    userContinentCode[dictKey] = 1
-        
+            if 'env_doc_id' in userData[country]:
+                if userData[country]['env_doc_id'] == documentID:
+                    dictKey = continent
+                    if dictKey in userContinentCode:
+                        userContinentCode[dictKey] += 1
+                    else:
+                        userContinentCode[dictKey] = 1
+
 def continentPrint():
     continents = list(userContinentCode.keys())
     plt.bar(continents, height=list(userContinentCode.values()))
@@ -145,20 +156,81 @@ def continentPrint():
     plt.show()
 #TASK2B END
 
+def GUI():
+    base = Tk()
+    base.title("Cory's and Tomasz's Coursework2")
+
+    mainframe = tkr.Frame(base)
+    mainframe.grid(column=0, row=0, sticky=(N, W, E, S)) #SETS EVERYTHING INTO GRID FORMAT. SIMILAR TO BOOTSTRAP IN WEB DEVELOPMENT
+    base.columnconfigure(0, weight=1)
+    base.rowconfigure(0, weight=1)
+
+    fileLocation = StringVar()
+    documentID = StringVar()
+    visitorID = StringVar()
+    task = StringVar(base)
+    task.set("Task X") # default value
+
+    fileLoc = tkr.Entry(mainframe, width=40, textvariable=fileLocation)
+    fileLoc.grid(column=1, row=1, sticky=(W, E))
+    tkr.Label(mainframe, text="File Location").grid(column=0, row=1, sticky=W)
+
+    docName = tkr.Entry(mainframe, width=40, textvariable=documentID)
+    docName.grid(column=1, row=3, sticky=(W, E))
+    tkr.Label(mainframe, text="Document UUID").grid(column=0, row=3, sticky=W)
+
+    visitorName = tkr.Entry(mainframe, width=40, textvariable=visitorID)
+    visitorName.grid(column=1, row=4, sticky=(W, E))
+    tkr.Label(mainframe, text="Visitor UUID").grid(column=0, row=4, sticky=W)
+
+
+    choices = [ 'Task 2a','Task 2b','Task 3','Task 4','Task 5']
+    task.set('Task 2a') # set the default option
+    choices = sorted(choices)
+    popupMenu = OptionMenu(mainframe, task, *choices)
+    Label(mainframe, text="Choose a Task").grid(row = 2, column = 0, sticky=W)
+    popupMenu.grid(row = 2, column =1)
+
+    button = tkr.Button(mainframe, text="Run task!", command= lambda: whatTask(task.get(), documentID.get(), visitorID.get()))
+    button.grid(row = 5, column =1)
+    for child in mainframe.winfo_children():
+        child.grid_configure(padx=5, pady=5)
+
+#    fileLoc.focus()
+    base.mainloop()
+
+def whatTask(task, documentID, visitorID):
+    if task == 'Task 2a':
+        countryCount(documentID)
+        countryPrint()
+    if task == 'Task 2b':
+        continentCount(documentID)
+        continentPrint()
+    if task == 'Task 3':
+        browserCount(documentID)
+        browserPrint()
+    if task == 'Task 4':
+        getReaders(documentID)
+        ReadDocuments(visitorID)
+        alsoLikes(documentID)
+        # REALLY GOOD DOC_ID ------- "131224090853-45a33eba6ddf71f348aef7557a86ca5f"
+    if task == 'Task 5':
+        pass
+
 def task2A():
-    documentID = "131203154832-9b8594b7ec211f7e1a0782fd9883a42c"
+    documentID = "131224090853-45a33eba6ddf71f348aef7557a86ca5f"
     #documentID = input("Enter the document ID: ") ------- UNCOMMENT ONCE FINISHED TESTING
     countryCount(documentID)
     countryPrint()
 
 def task2B():
-    documentID = "131203154832-9b8594b7ec211f7e1a0782fd9883a42c"
+    documentID = "131224090853-45a33eba6ddf71f348aef7557a86ca5f"
     continentCount(documentID)
     continentPrint()
 
 def task3():
     #documentID = "131203154832-9b8594b7ec211f7e1a0782fd9883a42c"
-    documentID = "140213050612-d83f236552a901d6cb841455905805cc"
+    documentID = "131224090853-45a33eba6ddf71f348aef7557a86ca5f"
     browserCount(documentID)
     browserPrint()
 
@@ -168,9 +240,10 @@ def main():
     fileLocation = "datasets/issuu_final.json"
     readJSON(fileLocation)
 
-    #task2A()
-    #task2B()
-    #task3()
+    GUI()
+    task2A()
+    task2B()
+    task3()
     print(getReaders("131224090853-45a33eba6ddf71f348aef7557a86ca5f"))
     print(ReadDocuments("f2e00a44114b4b0d"))
     print(alsoLikes("131224090853-45a33eba6ddf71f348aef7557a86ca5f"))
