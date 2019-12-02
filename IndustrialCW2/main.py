@@ -7,6 +7,7 @@ import numpy as np
 import tkinter as tkr
 from tkinter import * #IMPORTS ALL GUI COMPONENTS
 from pycountry_convert import country_alpha2_to_continent_code, country_name_to_country_alpha2
+import graphviz as graph
 
 # Suggestion: Move this data into a 'User' class in order to use more advanced lang. features - Cory
 userData = dict()
@@ -82,10 +83,10 @@ def alsoLikes(documentID):
         docIDs.remove(documentID)
         del docReaders[index]
 
+    print("AL: " + str(len(docIDs)))
     for i in range(0, len(docIDs)):
         if docIDs[i] not in retVal.keys():
             retVal[docIDs[i]] = docReaders[i]
-
 
     return retVal
 
@@ -121,7 +122,7 @@ def browserCount(documentID):
                         if "OPR" in userData[i]['visitor_useragent']:
                             browser = "Opera"
 
-                if browser = "":
+                if browser == "":
                     browser = "Other Browser"
                 if browser in browserCountDict:
                     browserCountDict[browser] += 1
@@ -216,8 +217,8 @@ def GUI():
     tkr.Label(mainframe, text="Visitor UUID").grid(column=0, row=4, sticky=W)
 
 
-    choices = [ 'Task 2a','Task 2b','Task 3','Task 4','Task 5']
-    task.set('Task 2a') # set the default option
+    choices = [ 'Views by Country','Views by Continent','Views by Browser','Readers also like','Da Graph']
+    task.set('Views by Country') # set the default option
     choices = sorted(choices)
     popupMenu = OptionMenu(mainframe, task, *choices)
     Label(mainframe, text="Choose a Task").grid(row = 2, column = 0, sticky=W)
@@ -232,19 +233,19 @@ def GUI():
     base.mainloop()
 
 def whatTask(task, documentID, visitorID):
-    if task == 'Task 2a':
+    if task == 'Views by Country':
         countryCount(documentID)
         countryPrint()
-    if task == 'Task 2b':
+    if task == 'Views by Continent':
         continentCount(documentID)
         continentPrint()
-    if task == 'Task 3':
+    if task == 'Views by Browser':
         browserCount(documentID)
         browserPrint()
-    if task == 'Task 4':
+    if task == 'Readers also like':
         task4(documentID)
         # REALLY GOOD DOC_ID ------- "131224090853-45a33eba6ddf71f348aef7557a86ca5f"
-    if task == 'Task 5':
+    if task == 'Da Graph':
         pass
 
 def task2A():
@@ -265,7 +266,9 @@ def task3():
     browserPrint()
 
 def task4(documentID):
+
     alsoDict = alsoLikes(documentID)
+    print(len(alsoDict))
     docIDs = list(alsoDict.keys())
     for i in range(0, len(docIDs)):
         print("" + str(docIDs[i]) + " : " + str(alsoDict[docIDs[i]]))
@@ -277,11 +280,10 @@ def main():
     fileLocation = "datasets/issuu_final.json"
     readJSON(fileLocation)
 
+
     GUI()
-    task2A()
-    task2B()
-    task3()
-    task4()
+
+
 
 
 # CHECK IF THIS IS MAIN FILE
