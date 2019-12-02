@@ -55,16 +55,44 @@ def ReadDocuments(visitorID):
             if userData[i]['visitor_uuid'] == visitorID:
                 if not userData[i]['env_doc_id'] in documents:
                     documents.append(userData[i]['env_doc_id'])
-    userReadDict[visitorID] = documents
     return documents
 
 def alsoLikes(documentID):
     tempUsers = list()
     tempUsers = getReaders(documentID)
     tempDocs = list()
+    outVal = list()
     for i in range(0, len(tempUsers)):
         tempDocs += ReadDocuments(tempUsers[i])
-    return tempDocs
+
+    retVal = dict()
+    docIDs = []
+    docReaders = []
+    for i in range(0, len(tempDocs)):
+        if tempDocs[i] not in docIDs:
+            docIDs.append(tempDocs[i])
+            docReaders.append(len(getReaders(tempDocs[i])))
+    for i in range(0, len(docReaders)):
+        for j in range(0, len(docReaders) - i):
+            if(docReaders[i] > docReaders[j]):
+                swap(docReaders, i, j)
+                swap(docIDs, i, j)
+    if(documentID in  docIDs):
+        index = docIDs.index(documentID)
+        docIDs.remove(documentID)
+        del docReaders[index]
+
+    for i in range(0, len(docIDs)):
+        if docIDs[i] not in retVal.keys():
+            retVal[docIDs[i]] = docReaders[i]
+
+
+    return retVal
+
+def swap(arr, i, j):
+    temp = arr[j]
+    arr[j] = arr[i]
+    arr[i] = temp
 
 
 
@@ -84,6 +112,8 @@ def browserCount(documentID):
                     browser = "Firefox"
                 if "MSIE" in userData[i]['visitor_useragent'] or "Trident" in userData[i]['visitor_useragent']:
                     browser = "Internet Explorer"
+                if "Opera" in userData[i]['visitor_useragent']:
+                    browser = "Opera"
                 if "Safari" in userData[i]['visitor_useragent']:
                     browser = "Safari"
                     if "Chrome" in userData[i]['visitor_useragent']:
@@ -91,6 +121,8 @@ def browserCount(documentID):
                         if "OPR" in userData[i]['visitor_useragent']:
                             browser = "Opera"
 
+                if browser = "":
+                    browser = "Other Browser"
                 if browser in browserCountDict:
                     browserCountDict[browser] += 1
                 else:
@@ -210,9 +242,7 @@ def whatTask(task, documentID, visitorID):
         browserCount(documentID)
         browserPrint()
     if task == 'Task 4':
-        getReaders(documentID)
-        ReadDocuments(visitorID)
-        alsoLikes(documentID)
+        task4(documentID)
         # REALLY GOOD DOC_ID ------- "131224090853-45a33eba6ddf71f348aef7557a86ca5f"
     if task == 'Task 5':
         pass
@@ -234,6 +264,13 @@ def task3():
     browserCount(documentID)
     browserPrint()
 
+def task4(documentID):
+    alsoDict = alsoLikes(documentID)
+    docIDs = list(alsoDict.keys())
+    for i in range(0, len(docIDs)):
+        print("" + str(docIDs[i]) + " : " + str(alsoDict[docIDs[i]]))
+    return docIDs[:10]
+
 def main():
     #Do this for all tasks
     #fileLocation = input("Enter JSON datset file location: ")
@@ -244,9 +281,8 @@ def main():
     task2A()
     task2B()
     task3()
-    print(getReaders("131224090853-45a33eba6ddf71f348aef7557a86ca5f"))
-    print(ReadDocuments("f2e00a44114b4b0d"))
-    print(alsoLikes("131224090853-45a33eba6ddf71f348aef7557a86ca5f"))
+    task4()
+
 
 # CHECK IF THIS IS MAIN FILE
 if __name__ == "__main__":
