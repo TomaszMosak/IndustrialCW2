@@ -3,41 +3,51 @@ import matplotlib.mlab as lab
 import json
 import sys
 import re
-import pycountry
 import numpy as np
 import tkinter as tkr
 from tkinter import * #IMPORTS ALL GUI COMPONENTS
 from pycountry_convert import country_alpha2_to_continent_code, country_name_to_country_alpha2
 import graphviz as graph
-import click
+import click as c
 from graphviz import Digraph as diG
 import os
 
 # Suggestion: Move this data into a 'User' class in order to use more advanced lang. features - Cory
 userData = dict()
 
-@click.command()
-@click.option('-g', is_flag=True, help="Include following: '-g' for GUI. Optional Command")
-@click.option('-u', default=None, help="Include following: '-u Visitor UUID'. Optional Command")
-@click.option('-d', default=None, help="Include following: '-d Document UUID'. Required Command")
-@click.option('-t', default="", required=True, help="Include following '-t Task ID'. Required Command \tCan be one of the following: 2a, 2b, 3, 4, 5, 6")
-@click.option('-f', default="", required=True, help="Include following '-f Filename' Required Command")
+#This allows the user to use the terminal for the coursework. Task 7.
+#Useful as it allows the user to type --help
+@c.command()
+@c.option('-g', is_flag=True, help="Include following: '-g' for GUI. Optional Command")
+
+#REQUIRED FORMAT -u, -d, -t, -f
+@c.option('-u', default=None, help="Include following: '-u Visitor UUID'. Optional Command")
+@c.option('-d', default=None, help="Include following: '-d Document UUID'. Required Command")
+@c.option('-t', default="", required=True, help="Include following '-t Task ID'. Required Command. Tasks: 2a, 2b, 3, 4, 5, 6")
+@c.option('-f', default="", required=True, help="Include following '-f Filename' Required Command")
+
+
 def runFromTerminal(g:str,u:str,d:str,t:str,f:str):
+    """
+    Either creates a GUI for the user to use or takes the user input from terminal to complete tasks
+    """
     if g:
         GUI()
-    if f == "":
-        print('Error: File Location not specified')
     else:
         try:
             readJSON(f)
             whatTask(t,d,u)
         except:
-            print('Error: Use --help to find required format')
+            print('Input Error: Use --help to find required format')
 
 
 #USE THIS WITH ANY TASKS TO READ THE JSON FILE AND POPULATE userData dictionary
 def readJSON(fileLocation):
-    print('Reading JSON data from file', fileLocation)
+    """
+    Reads the input file and populates the userData Dictionary
+    :param fileLocation: JSON file
+    """
+    print('Attempting to read JSON data from file', fileLocation)
 
     with open(fileLocation) as inputFile:
         jsonData = inputFile.read()
@@ -55,14 +65,24 @@ def readJSON(fileLocation):
     print("The user dictionary has been successfully populated")
 
 def createGraph(dictionary):
-    x = list(dictionary.keys())
-    plt.bar(x, height=list(dictionary.values()))
-    plt.xticks(x, x)
+    """
+    Draws a matplotlib histogram with the use of the input Dictionary
+    |Key - X Axis| |Value - Y Axis|
+    :param dictionary : Dictionary to be displayed to user
+    """
+    data = list(dictionary.keys())
+    plt.bar(data, height=list(dictionary.values()))
+    plt.xticks(data, data)
     plt.show()
 
 
 #TASK2A START
 def countryCount(documentID):
+    """
+    Counts how many occurances of each contry appear for the given document
+    :param documentID : Document UUID
+    :return : Dictionary of countries and amount of occurances
+    """
     userCountryCode = dict()
     for country in range(0, len(userData)):
         if 'visitor_country' in userData[country] and 'env_doc_id' in userData[country]:
@@ -79,6 +99,11 @@ def countryCount(documentID):
 
 #TASK2B START
 def continentCount(documentID):
+    """
+    Counts how many occuraranes of each continent appear for the given document
+    :param documentID : Document UUID
+    :return : Dictionary of contienets and amount of occurances
+    """
     userContinentCode = dict()
     continents = {
     'NA': 'North America',
@@ -119,6 +144,11 @@ def continentCount(documentID):
     # Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.0 Mobile/14E304 Safari/602.1 ---> SAFARI
     # Mozilla/5.0 (compatible; MSIE 9.0; Windows Phone OS 7.5; Trident/5.0; IEMobile/9.0) ---> INTERNET EXPLORER
 def browserCount(documentID):
+    """
+    Counts occurances of each browser which displayed the input document
+    :param documentID : Document UUID
+    :return : Dictionary of browser names and amount of occurances
+    """
     browser = ""
     browserCountDict = dict()
     for i in range(0, len(userData)):
@@ -151,7 +181,11 @@ def browserCount(documentID):
 #TASK 4 START
 
 def getReaders(documentID):
-    #userData -> json
+    """
+    Finds all unique visitor UUIDs that read the input Document
+    :param documentID : Document UUID
+    :return : List of visitor UUIDs
+    """
     readers = list()
     for i in range(0, len(userData)):
         if 'env_doc_id' in userData[i] and 'visitor_uuid' in userData[i]:
@@ -161,6 +195,11 @@ def getReaders(documentID):
 
 
 def getDocuments(visitorID):
+    """
+    Finds all unique document UUIDs that the user has read
+    :param visitorID : Visitor UUID
+    :return : List of Document UUIDs
+    """
     documents = list()
     for i in  range(0, len(userData)):
         if 'env_doc_id' in userData[i] and 'visitor_uuid' in userData[i]:
@@ -169,6 +208,13 @@ def getDocuments(visitorID):
     return documents
 
 def alsoLikes(documentID, visitorID: str = None):
+    """
+    Fetches which documents have also been read by users who read the input document. If a user is
+    specified, only fetches documents read by that user
+    :param documentID : Document UUID
+    :param visitorID : Visitor UUID
+    :return : Ordered list of Document UUIDs which also were read by visitors of the input Document UUID
+    """
     documentsList = []
     docCount = []
     if visitorID is None:
@@ -187,14 +233,19 @@ def alsoLikes(documentID, visitorID: str = None):
     print(sorted(list(dict.fromkeys(docCount)), key=lambda x: x[1], reverse=True))
     return sorted(list(dict.fromkeys(docCount)), key=lambda x: x[1], reverse=True)
 
-def alsoLikesTop10(documentID, visitorID: str = None):
-    return alsoLikes(documentID, visitorID)[:10]
-
 #TASK 4 END
 
 #TASK 5 START
 
 def alsoLikesList(documentID, visitorID: str = None):
+
+    """
+    Creates a list of tuples, Tuple{|First element = documentUUID| |Second element = visitorUUID|}
+    :param documentID : Document UUID
+    :param visitorID : Visitor UUID
+    :return : Ordered tuple containing lists of document + visitor UUID
+    """
+
     visitors = []
     resultList = []
     if visitorID is None:
@@ -218,6 +269,14 @@ def alsoLikesList(documentID, visitorID: str = None):
     return sorted(resultList, key=lambda x: len(x[1]), reverse=True)
 
 def alsoLikesGraph(documentID, visitorID: str = None):
+    """
+    Creates a graph showing the connections between documents read by visitors of the input document
+    in dot format
+    :param documentID : Document UUID
+    :param visitorID : visitor UUID
+    :return : Digraph (can be rendered)
+    """
+
     tupleList = alsoLikesList(documentID, visitorID)
 
     tupleListIndex = []
@@ -259,9 +318,32 @@ def alsoLikesGraph(documentID, visitorID: str = None):
 #TASK 5 END
 
 #TASK 6 - GUI
+
 def GUI():
+    """
+    Draws and Displays a GUI which supports the run of any tasks selected by the user
+    """
+
+    def errorGUI():
+        """
+        Popup error message, allows the user to know they forgot a required field
+        """
+        messagebox.showinfo('ERROR', 'Empty REQUIRED Input: Try Again')
+
+    def validInput():
+        """
+        Makes sure that all the REQUIRED fields have been populated
+        """
+
+        inputs = [task.get(), documentID.get(), fileLocation.get()]
+
+        for input in inputs:
+            if input == "":
+                return False
+        return True
+
     base = Tk()
-    base.title("Cory's and Tomasz's Coursework2")
+    base.title("Cory's and Tomasz's Coursework2 GUI")
 
     mainframe = tkr.Frame(base)
     mainframe.grid(column=0, row=0, sticky=(N, W, E, S)) #SETS EVERYTHING INTO GRID FORMAT. SIMILAR TO BOOTSTRAP IN WEB DEVELOPMENT
@@ -274,11 +356,8 @@ def GUI():
     task = StringVar(base)
     task.set("Task X") # default value
 
-    fileLoc = tkr.Button(mainframe,
-                   text="Choose File",
-                   command= lambda:  fileLocation.set(filedialog.askopenfilename(initialdir = os.path.dirname(os.path.abspath(__file__))
-                   ,title = "Select file",filetypes = (("json files","*.json"),("all files","*.*"))))
-    )
+    #Creates a GUI to find the dataset
+    fileLoc = tkr.Button(mainframe, text="Choose JSON Input File", command= lambda:  fileLocation.set(filedialog.askopenfilename(initialdir = os.path.dirname(os.path.abspath(__file__)), title = "Select file",filetypes = (("json files","*.json"),("all files","*.*")))))
     fileLoc.grid(column=1, row=1, sticky=(W, E))
     tkr.Label(mainframe, text="File Location").grid(column=0, row=1, sticky=W)
 
@@ -296,15 +375,26 @@ def GUI():
     popupMenu = OptionMenu(mainframe, task, *choices)
     Label(mainframe, text="Choose a Task").grid(row = 2, column = 0, sticky=W)
     popupMenu.grid(row = 2, column =1)
+    #automatically updates the dataset to the user choice
     fileLocation.trace("w", lambda name, index, mode, fileN=fileLocation: readJSON(fileN.get()))
-    button = tkr.Button(mainframe, text="Run task!", command= lambda: whatTask(task.get(), documentID.get(), visitorID.get()))
+    button = tkr.Button(mainframe, width=20, text="RUN IT!", command= lambda: whatTask(task.get(), documentID.get(), visitorID.get()) if validInput() == True else errorGUI())
     button.grid(row = 5, column =1)
     for child in mainframe.winfo_children():
         child.grid_configure(padx=5, pady=5)
 
     base.mainloop()
 
+#TASK 6 END - GUI
+
 def whatTask(task, documentID, visitorID):
+
+    """
+    Based on GUI or Terminal user input runs the chosen task
+    :param task : Task name
+    :param documentID : Document UUID
+    :param visitorID : VisitorUUID
+    """
+
     if visitorID == "":
         visitorID = None
     if documentID == "":
@@ -317,7 +407,8 @@ def whatTask(task, documentID, visitorID):
     if task == 'Views by Browser' or task == '3':
         createGraph(browserCount(documentID))
     if task == 'Also Like' or task == '4':
-        for likes in alsoLikesTop10(documentID, visitorID):
+        top10 = alsoLikes(documentID, visitorID)[:10]
+        for likes in top10:
             print(likes)
         # TEST DOC_ID ------- "130325130327-d5889c2cf2e642b6867cb9005e12297f"
     if task == 'Also Like - Graph' or task == '5':
@@ -325,12 +416,16 @@ def whatTask(task, documentID, visitorID):
         grh.render("alsoLikesGraph.ps", view=True)
     if task == '6':
         GUI()
-    else:
-        print('Error: No valid task selected.')
-#TASK 6 END - GUI
 
+
+#________________________________________
+# Main
+#¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 def main():
     runFromTerminal()
 # CHECK IF THIS IS MAIN FILE
 if __name__ == "__main__":
     main()
+#________________________________________
+# Main
+#¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
