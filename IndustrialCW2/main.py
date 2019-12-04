@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.mlab as lab
 import json
 import sys
 import re
@@ -8,14 +9,30 @@ import tkinter as tkr
 from tkinter import * #IMPORTS ALL GUI COMPONENTS
 from pycountry_convert import country_alpha2_to_continent_code, country_name_to_country_alpha2
 import graphviz as graph
+import click
+from graphviz import Digraph as diG
+import os
 
 # Suggestion: Move this data into a 'User' class in order to use more advanced lang. features - Cory
 userData = dict()
-userCountryCode = dict()
-userContinentCode = dict()
-browserCountDict = dict()
-documentReaderDict = dict()
-userReadDict = dict()
+
+@click.command()
+@click.option('-g', is_flag=True, help="Include following: '-g' for GUI. Optional Command")
+@click.option('-u', default=None, help="Include following: '-u Visitor UUID'. Optional Command")
+@click.option('-d', default=None, help="Include following: '-d Document UUID'. Required Command")
+@click.option('-t', default="", required=True, help="Include following '-t Task ID'. Required Command \tCan be one of the following: 2a, 2b, 3, 4, 5, 6")
+@click.option('-f', default="", required=True, help="Include following '-f Filename' Required Command")
+def runFromTerminal(g:str,u:str,d:str,t:str,f:str):
+    if g:
+        GUI()
+    if f == "":
+        print('Error: File Location not specified')
+    else:
+        try:
+            readJSON(f)
+            whatTask(t,d,u)
+        except:
+            print('Error: Use --help to find required format')
 
 
 #USE THIS WITH ANY TASKS TO READ THE JSON FILE AND POPULATE userData dictionary
@@ -37,66 +54,64 @@ def readJSON(fileLocation):
 
     print("The user dictionary has been successfully populated")
 
-def getReaders(documentID):
-    #userData -> json
-    readers = list()
-    for i in range(0, len(userData)):
-        if 'env_doc_id' in userData[i] and 'visitor_uuid' in userData[i]:
-            if userData[i]['env_doc_id'] == documentID:
-                if not userData[i]['visitor_uuid'] in readers:
-                    readers.append(userData[i]['visitor_uuid'])
-    documentReaderDict[documentID] = readers
-    return readers
+def createGraph(dictionary):
+    x = list(dictionary.keys())
+    plt.bar(x, height=list(dictionary.values()))
+    plt.xticks(x, x)
+    plt.show()
 
 
-def ReadDocuments(visitorID):
-    documents = list()
-    for i in  range(0, len(userData)):
-        if 'env_doc_id' in userData[i] and 'visitor_uuid' in userData[i]:
-            if userData[i]['visitor_uuid'] == visitorID:
-                if not userData[i]['env_doc_id'] in documents:
-                    documents.append(userData[i]['env_doc_id'])
-    return documents
-
-def alsoLikes(documentID):
-    tempUsers = list()
-    tempUsers = getReaders(documentID)
-    tempDocs = list()
-    outVal = list()
-    for i in range(0, len(tempUsers)):
-        tempDocs += ReadDocuments(tempUsers[i])
-
-    retVal = dict()
-    docIDs = []
-    docReaders = []
-    for i in range(0, len(tempDocs)):
-        if tempDocs[i] not in docIDs:
-            docIDs.append(tempDocs[i])
-            docReaders.append(len(getReaders(tempDocs[i])))
-    for i in range(0, len(docReaders)):
-        for j in range(0, len(docReaders) - i):
-            if(docReaders[i] > docReaders[j]):
-                swap(docReaders, i, j)
-                swap(docIDs, i, j)
-    if(documentID in  docIDs):
-        index = docIDs.index(documentID)
-        docIDs.remove(documentID)
-        del docReaders[index]
-
-    print("AL: " + str(len(docIDs)))
-    for i in range(0, len(docIDs)):
-        if docIDs[i] not in retVal.keys():
-            retVal[docIDs[i]] = docReaders[i]
-
-    return retVal
-
-def swap(arr, i, j):
-    temp = arr[j]
-    arr[j] = arr[i]
-    arr[i] = temp
+#TASK2A START
+def countryCount(documentID):
+    userCountryCode = dict()
+    for country in range(0, len(userData)):
+        if 'visitor_country' in userData[country] and 'env_doc_id' in userData[country]:
+            if userData[country]['env_doc_id'] == documentID:
+                dictKey = userData[country]['visitor_country']
+                if dictKey in userCountryCode:
+                    userCountryCode[dictKey] += 1
+                else:
+                    userCountryCode[dictKey] = 1
+    return userCountryCode
 
 
+#TASK2A END
 
+#TASK2B START
+def continentCount(documentID):
+    userContinentCode = dict()
+    continents = {
+    'NA': 'North America',
+    'SA': 'South America',
+    'AS': 'Asia',
+    'OC': 'Australia',
+    'AF': 'Africa',
+    'EU': 'Europe'
+}
+    for country in range(0, len(userData)):
+            try:
+                if userData[country]["visitor_country"] == 'ZZ':
+                    continent = 'UNKNOWN'
+                elif userData[country]['visitor_country'] == 'AP': #Asia/Pacific Region
+                    continent = 'Asia'
+                elif userData[country]['visitor_country'] in continents.keys():
+                    continent = userData[country]['visitor_country']
+                else:
+                    continent = continents[country_alpha2_to_continent_code(userData[country]['visitor_country'])]
+            except:
+                continent = 'NOT ISO3166'
+            if 'env_doc_id' in userData[country]:
+                if userData[country]['env_doc_id'] == documentID:
+                    dictKey = continent
+                    if dictKey in userContinentCode:
+                        userContinentCode[dictKey] += 1
+                    else:
+                        userContinentCode[dictKey] = 1
+    return userContinentCode
+
+#TASK2B END
+
+#TASK 3 START
 
     # Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36 ---> CHROME
     # Mozilla/5.0 (Macintosh; Intel Mac OS X x.y; rv:42.0) Gecko/20100101 Firefox/42.0 ---> Firefox
@@ -105,6 +120,7 @@ def swap(arr, i, j):
     # Mozilla/5.0 (compatible; MSIE 9.0; Windows Phone OS 7.5; Trident/5.0; IEMobile/9.0) ---> INTERNET EXPLORER
 def browserCount(documentID):
     browser = ""
+    browserCountDict = dict()
     for i in range(0, len(userData)):
 
         if 'visitor_useragent' in userData[i] and 'env_doc_id' in  userData[i]:
@@ -128,67 +144,121 @@ def browserCount(documentID):
                     browserCountDict[browser] += 1
                 else:
                     browserCountDict[browser] = 1
+    return browserCountDict
 
-def browserPrint():
-    browsers = list(browserCountDict.keys())
-    plt.bar(browsers, list(browserCountDict.values()))
-    plt.xticks(browsers, browsers)
-    plt.show()
+#TASK 3 END
 
-#TASK2A START
-def countryCount(documentID):
-    for country in range(0, len(userData)):
-        if 'visitor_country' in userData[country] and 'env_doc_id' in userData[country]:
-            if userData[country]['env_doc_id'] == documentID:
-                dictKey = userData[country]['visitor_country']
-                if dictKey in userCountryCode:
-                    userCountryCode[dictKey] += 1
-                else:
-                    userCountryCode[dictKey] = 1
+#TASK 4 START
+
+def getReaders(documentID):
+    #userData -> json
+    readers = list()
+    for i in range(0, len(userData)):
+        if 'env_doc_id' in userData[i] and 'visitor_uuid' in userData[i]:
+            if userData[i]['env_doc_id'] == documentID and userData[i]['visitor_uuid'] not in readers:
+                    readers.append(userData[i]['visitor_uuid'])
+    return readers
 
 
-def countryPrint():
-    countries = list(userCountryCode.keys())
-    plt.bar(countries, height=list(userCountryCode.values()))
-    plt.xticks(countries, countries)
-    plt.show()
+def getDocuments(visitorID):
+    documents = list()
+    for i in  range(0, len(userData)):
+        if 'env_doc_id' in userData[i] and 'visitor_uuid' in userData[i]:
+            if userData[i]['visitor_uuid'] == visitorID and userData[i]['env_doc_id'] not in documents:
+                    documents.append(userData[i]['env_doc_id'])
+    return documents
 
-#TASK2A END
+def alsoLikes(documentID, visitorID: str = None):
+    documentsList = []
+    docCount = []
+    if visitorID is None:
+        for visitor in getReaders(documentID):
+            for document in getDocuments(visitor):
+                documentsList.append(document)
+    else:
+        for document in getDocuments(visitorID):
+            documentsList.append(document)
 
-#TASK2B START
-def continentCount(documentID):
-    continents = {
-    'NA': 'North America',
-    'SA': 'South America',
-    'AS': 'Asia',
-    'OC': 'Australia',
-    'AF': 'Africa',
-    'EU': 'Europe'
-}
-    for country in range(0, len(userData)):
-        if userData[country]['visitor_country'] == 'ZZ':
-            continent = 'UNKNOWN'
-        elif userData[country]['visitor_country'] == 'AP': #Asia/Pacific Region
-            continent = 'Asia'
-        elif userData[country]['visitor_country'] in continents.keys():
-            continent = userData[country]['visitor_country']
+    while documentID in documentsList:
+        documentsList.remove(documentID)
+
+    for document in documentsList:
+        docCount.append((document, documentsList.count(document)))
+    print(sorted(list(dict.fromkeys(docCount)), key=lambda x: x[1], reverse=True))
+    return sorted(list(dict.fromkeys(docCount)), key=lambda x: x[1], reverse=True)
+
+def alsoLikesTop10(documentID, visitorID: str = None):
+    return alsoLikes(documentID, visitorID)[:10]
+
+#TASK 4 END
+
+#TASK 5 START
+
+def alsoLikesList(documentID, visitorID: str = None):
+    visitors = []
+    resultList = []
+    if visitorID is None:
+        for visitor in getReaders(documentID):
+            for document in getDocuments(visitor):
+                visitors.append((document, visitor))
+    else:
+        for visitor in getReaders(documentID):
+            if visitor == visitorID:
+                visitors.append((documentID, visitor))
+            else:
+                for document in getDocuments(visitor):
+                    visitors.append((document, visitor))
+    for i in range(0, len(visitors)):
+        if visitors[i][0] in dict(resultList).keys():
+            for r in resultList:
+                if r[0] == visitors[i][0]:
+                    r[1].append(visitors[i][1])
         else:
-            continent = continents[country_alpha2_to_continent_code(userData[country]['visitor_country'])]
-            if 'env_doc_id' in userData[country]:
-                if userData[country]['env_doc_id'] == documentID:
-                    dictKey = continent
-                    if dictKey in userContinentCode:
-                        userContinentCode[dictKey] += 1
-                    else:
-                        userContinentCode[dictKey] = 1
+            resultList.append((visitors[i][0], [visitors[i][1]]))
+    return sorted(resultList, key=lambda x: len(x[1]), reverse=True)
 
-def continentPrint():
-    continents = list(userContinentCode.keys())
-    plt.bar(continents, height=list(userContinentCode.values()))
-    plt.xticks(continents, continents)
-    plt.show()
-#TASK2B END
+def alsoLikesGraph(documentID, visitorID: str = None):
+    tupleList = alsoLikesList(documentID, visitorID)
 
+    tupleListIndex = []
+
+    for i in range(0, len(tupleList)):
+        tempList = []
+        for visitor in tupleList[i][1]:
+            tempList.append(visitor)
+        tupleListIndex.append(tempList)
+    allVisits = []
+
+    for Visits in tupleListIndex:
+        for entry in Visits:
+            allVisits.append(entry)
+    for visitor in allVisits:
+        counter = allVisits.count(visitor)
+        if counter == 1:
+            allVisits.remove(visitor)
+
+
+    g = diG(comment='Visitors also liked...', strict=True)
+    for entry in tupleList:
+        document = entry[0]
+
+        g.node(document, document[-4:], shape="circle", style="filled", color="lightpink")
+
+        for visitor in entry[1]:
+            if f"\t{visitor}" not in g.body and visitor in allVisits:
+                g.node(visitor, visitor[-4:], shape="box", style="filled", color="lightskyblue")
+                g.edge(visitor, document)
+
+    g.node(documentID, documentID[-4:], color="green", style="filled")
+    if visitorID is not None:
+        g.node(visitorID, visitorID[-4:], color="green", style="filled")
+        g.edge(visitorID, documentID)
+
+    g.node(tupleList[1][0], tupleList[1][0][-4:], shape="circle", style="filled", color="red")
+    return g
+#TASK 5 END
+
+#TASK 6 - GUI
 def GUI():
     base = Tk()
     base.title("Cory's and Tomasz's Coursework2")
@@ -204,7 +274,11 @@ def GUI():
     task = StringVar(base)
     task.set("Task X") # default value
 
-    fileLoc = tkr.Entry(mainframe, width=40, textvariable=fileLocation)
+    fileLoc = tkr.Button(mainframe,
+                   text="Choose File",
+                   command= lambda:  fileLocation.set(filedialog.askopenfilename(initialdir = os.path.dirname(os.path.abspath(__file__))
+                   ,title = "Select file",filetypes = (("json files","*.json"),("all files","*.*"))))
+    )
     fileLoc.grid(column=1, row=1, sticky=(W, E))
     tkr.Label(mainframe, text="File Location").grid(column=0, row=1, sticky=W)
 
@@ -217,75 +291,46 @@ def GUI():
     tkr.Label(mainframe, text="Visitor UUID").grid(column=0, row=4, sticky=W)
 
 
-    choices = [ 'Views by Country','Views by Continent','Views by Browser','Readers also like','Da Graph']
+    choices = [ 'Views by Country','Views by Continent','Views by Browser','Also Like','Also Like - Graph']
     task.set('Views by Country') # set the default option
-    choices = sorted(choices)
     popupMenu = OptionMenu(mainframe, task, *choices)
     Label(mainframe, text="Choose a Task").grid(row = 2, column = 0, sticky=W)
     popupMenu.grid(row = 2, column =1)
-
+    fileLocation.trace("w", lambda name, index, mode, fileN=fileLocation: readJSON(fileN.get()))
     button = tkr.Button(mainframe, text="Run task!", command= lambda: whatTask(task.get(), documentID.get(), visitorID.get()))
     button.grid(row = 5, column =1)
     for child in mainframe.winfo_children():
         child.grid_configure(padx=5, pady=5)
 
-#    fileLoc.focus()
     base.mainloop()
 
 def whatTask(task, documentID, visitorID):
-    if task == 'Views by Country':
-        countryCount(documentID)
-        countryPrint()
-    if task == 'Views by Continent':
-        continentCount(documentID)
-        continentPrint()
-    if task == 'Views by Browser':
-        browserCount(documentID)
-        browserPrint()
-    if task == 'Readers also like':
-        task4(documentID)
-        # REALLY GOOD DOC_ID ------- "131224090853-45a33eba6ddf71f348aef7557a86ca5f"
-    if task == 'Da Graph':
-        pass
+    if visitorID == "":
+        visitorID = None
+    if documentID == "":
+        documentID = None
 
-def task2A():
-    documentID = "131224090853-45a33eba6ddf71f348aef7557a86ca5f"
-    #documentID = input("Enter the document ID: ") ------- UNCOMMENT ONCE FINISHED TESTING
-    countryCount(documentID)
-    countryPrint()
-
-def task2B():
-    documentID = "131224090853-45a33eba6ddf71f348aef7557a86ca5f"
-    continentCount(documentID)
-    continentPrint()
-
-def task3():
-    #documentID = "131203154832-9b8594b7ec211f7e1a0782fd9883a42c"
-    documentID = "131224090853-45a33eba6ddf71f348aef7557a86ca5f"
-    browserCount(documentID)
-    browserPrint()
-
-def task4(documentID):
-
-    alsoDict = alsoLikes(documentID)
-    print(len(alsoDict))
-    docIDs = list(alsoDict.keys())
-    for i in range(0, len(docIDs)):
-        print("" + str(docIDs[i]) + " : " + str(alsoDict[docIDs[i]]))
-    return docIDs[:10]
+    if task == 'Views by Country' or task == '2a':
+        createGraph(countryCount(documentID))
+    if task == 'Views by Continent' or task == '2b':
+        createGraph(continentCount(documentID))
+    if task == 'Views by Browser' or task == '3':
+        createGraph(browserCount(documentID))
+    if task == 'Also Like' or task == '4':
+        for likes in alsoLikesTop10(documentID, visitorID):
+            print(likes)
+        # TEST DOC_ID ------- "130325130327-d5889c2cf2e642b6867cb9005e12297f"
+    if task == 'Also Like - Graph' or task == '5':
+        grh = alsoLikesGraph(documentID, visitorID)
+        grh.render("alsoLikesGraph.ps", view=True)
+    if task == '6':
+        GUI()
+    else:
+        print('Error: No valid task selected.')
+#TASK 6 END - GUI
 
 def main():
-    #Do this for all tasks
-    #fileLocation = input("Enter JSON datset file location: ")
-    fileLocation = "datasets/issuu_final.json"
-    readJSON(fileLocation)
-
-
-    GUI()
-
-
-
-
+    runFromTerminal()
 # CHECK IF THIS IS MAIN FILE
 if __name__ == "__main__":
     main()
