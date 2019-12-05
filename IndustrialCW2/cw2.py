@@ -463,7 +463,8 @@ def whatTask(task, documentID, visitorID):
 #¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 def main():
     runFromTerminal()
-# CHECK IF THIS IS MAIN FILE
+
+
 if __name__ == "__main__":
     main()
 #________________________________________
